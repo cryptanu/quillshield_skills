@@ -1,22 +1,30 @@
 # Behavioral State Analysis (BSA)
 
-A comprehensive smart contract security auditing skill that uses multi-dimensional vulnerability detection through behavioral pattern analysis and state machine verification.
+Token-efficient smart contract security auditing that scopes analysis to what matters, runs only relevant threat engines, and uses tiered output depth to avoid context exhaustion.
 
 ## What It Does
 
-Instead of pattern matching or sequential analysis, BSA:
+1. **Extracts behavioral intent** — invariants, state machines, roles (kept brief)
+2. **Smart-scopes threat engines** — classifies contract type, runs only relevant engines (ETE/ACTE/SITE)
+3. **Tiered output** — full PoCs for Critical/High only; one-liners for Low/Info
+4. **Bayesian confidence scoring** — mathematical prioritization of findings
 
-1. **Extracts behavioral intent** from code, comments, and naming conventions
-2. **Runs parallel threat engines** across economic, access control, and state integrity dimensions
-3. **Generates adversarial proofs** with executable Foundry/Hardhat test cases
-4. **Scores findings** using Bayesian confidence for prioritization
+## Token Efficiency
+
+BSA is designed to complete full audits within a single context window:
+
+- **Smart scoping**: A utility library skips the Economic Threat Engine entirely
+- **Tiered depth**: Only Critical/High findings get PoC code generation
+- **No redundancy**: Each finding appears once with all metadata inline
+- **Compressed Phase 1**: ≤30 lines per contract instead of verbose spec documents
+- **Reference files are optional**: Deep-dive checklists only loaded when needed
 
 ## When to Use
 
-- Starting a comprehensive smart contract audit
-- Threat modeling DeFi protocols (DEXs, lending, staking, vaults)
-- Analyzing cross-contract attack surfaces
-- Generating exploit proof-of-concepts
+- Comprehensive smart contract security audit
+- DeFi protocol threat modeling
+- Cross-contract attack surface analysis
+- Vulnerability prioritization
 
 ## Structure
 
@@ -24,18 +32,22 @@ Instead of pattern matching or sequential analysis, BSA:
 behavioral-state-analysis/
 ├── skills/
 │   └── behavioral-state-analysis/
-│       ├── SKILL.md                          # Core methodology
+│       ├── SKILL.md                          # Core methodology (token-optimized)
 │       └── references/
-│           ├── threat-engines.md             # Detailed threat engine specs
-│           └── confidence-scoring.md         # Bayesian scoring reference
+│           ├── threat-engines.md             # Optional deep-dive checklists
+│           └── confidence-scoring.md         # Optional scoring reference
 ├── .claude-plugin/
 │   └── plugin.json
 └── README.md
 ```
 
-## Key Concepts
+## Engine Selection Matrix
 
-- **Behavioral Decomposition**: Extract what the code is supposed to do before finding deviations
-- **Multi-Dimensional Threat Modeling**: Simultaneous analysis across economic, access control, and state integrity
-- **Adversarial Proof Generation**: Automated exploit scenarios with verifiable PoCs
-- **Bayesian Confidence Scoring**: Mathematical prioritization of findings
+| Contract Type | ETE | ACTE | SITE |
+|--------------|-----|------|------|
+| DeFi (DEX/lending/vault/staking) | Full | Full | Full |
+| Token (ERC20/721/1155) | Full | Lite | Lite |
+| Governance/DAO | Lite | Full | Full |
+| NFT marketplace | Full | Full | Lite |
+| Utility/Library | Skip | Lite | Lite |
+| Proxy/Upgradeable | Skip | Full | Full |

@@ -1,165 +1,45 @@
-# Multi-Dimensional Threat Engines — Detailed Reference
+# Threat Engine Deep-Dive Reference
 
-## Economic Threat Engine (ETE)
+> **Optional reference.** Only read this file when performing a deep audit that needs granular engine checklists beyond what SKILL.md provides. Do NOT load this for standard audits.
+
+## Economic Threat Engine (ETE) — Detailed Checklists
 
 ### Value Flow Tracing
-
-Trace every path where value (ETH, tokens, NFTs) can enter or leave the contract system.
-
-**Build a Value Flow Tree:**
-
-```
-Contract Entry Points:
-├─ deposit() → ETH/Token IN
-├─ stake() → Token IN
-├─ withdraw() → ETH/Token OUT
-├─ claimRewards() → Token OUT (minted or from pool)
-├─ liquidate() → Token redistribution
-└─ emergencyDrain() → ETH/Token OUT (admin)
-```
-
-**Identify anomalies:**
-- **Value sinks**: Where funds can be trapped with no exit path
-- **Value sources**: Unexpected minting or value creation
-- **Circular flows**: Value loops that can be amplified (flash loan vectors)
+- Map all entry/exit points: deposit, stake, withdraw, claim, liquidate, emergencyDrain
+- Identify: value sinks (trapped funds), unexpected sources (minting), circular flows (flash loan amplification)
 
 ### Economic Invariant Verification
-
-For each contract, verify:
-
-```
-sum(deposits) == sum(withdrawals) + contractBalance
-```
-
-Test under all conditions:
-- Normal operations
-- Extreme values (near uint256 max)
-- Concurrent transactions
-- Price oracle manipulation (for DEX/AMM)
-- Flash loan scenarios
+- Core: `sum(deposits) == sum(withdrawals) + contractBalance`
+- Test under: normal ops, extreme values (uint256 edge), concurrent txs, oracle manipulation, flash loans
 
 ### Incentive Analysis
+- For each public function: `if Benefit > Cost → exploit vector`
+- Check: MEV opportunities, sandwich vectors, front-running, griefing (harm others at low cost)
 
-Model rational actor behavior:
+## Access Control Threat Engine (ACTE) — Detailed Checklists
 
-```
-For each public function F:
-  If I call F with parameters P:
-    Cost = gas + any required deposit
-    Benefit = any extractable value
-    If Benefit > Cost → potential exploit vector
-```
+### Role Hierarchy
+- Map complete role graph: Owner → Admin → Pauser/FeeManager; Governance → Executor; Guardian
+- Per function: which roles can call, is check correct, is role assignment/revocation controlled
 
-Detect:
-- MEV (Miner Extractable Value) opportunities
-- Sandwich attack vectors
-- Front-running profitable transactions
-- Griefing attacks (harm others at low cost)
+### Permission Boundary Testing
+- Build matrix: Function × Role → Expected vs Actual access
+- Flag any discrepancy between expected and actual permissions
 
----
+### Privilege Escalation
+- Test: user self-granting admin, admin bypassing timelock, msg.sender/tx.origin confusion
+- Test: signature replay for unauthorized access, re-initialization to reset roles
 
-## Access Control Threat Engine (ACTE)
-
-### Role Hierarchy Mapping
-
-Build the complete role graph:
-
-```
-Owner (deployer)
-├── Admin (granted by owner)
-│   ├── Pauser (granted by admin)
-│   └── FeeManager (granted by admin)
-├── Governance (timelock)
-│   └── Executor (timelock-controlled)
-└── Guardian (emergency multisig)
-```
-
-For each function, verify:
-- Which roles can call it
-- Whether the role check is correctly implemented
-- Whether role assignment/revocation is properly controlled
-
-### Permission Boundary Testing Matrix
-
-```
-| Function        | Public | User  | Admin | Owner | Governance |
-|-----------------|--------|-------|-------|-------|------------|
-| deposit()       | ✓      | ✓     | ✓     | ✓     | ✓          |
-| withdraw()      | ✓      | ✓     | ✓     | ✓     | ✓          |
-| setFee()        | ✗      | ✗     | ✓     | ✓     | ✓          |
-| pause()         | ✗      | ✗     | ✗     | ✓     | ✓          |
-| upgradeImpl()   | ✗      | ✗     | ✗     | ✗     | ✓          |
-```
-
-Flag any cell where the actual access differs from the expected pattern.
-
-### Privilege Escalation Paths
-
-Test multi-step attack sequences:
-
-1. Can a user grant themselves admin rights?
-2. Can an admin bypass governance timelocks?
-3. Can role confusion (msg.sender vs tx.origin) be exploited?
-4. Can signature replay grant unauthorized access?
-5. Can initialization be called post-deployment to reset roles?
-
----
-
-## State Integrity Threat Engine (SITE)
+## State Integrity Threat Engine (SITE) — Detailed Checklists
 
 ### State Transition Validation
+- Per state-modifying function: are ALL variables updated atomically?
+- Check for partial updates (e.g., balance decremented but pendingWithdrawals not updated)
 
-For each state-modifying function, verify:
+### Sequence Vulnerabilities
+- Test unexpected orderings: deposit before init, withdraw before deposit, action after pause
+- Test re-initialization attacks: `initialize()` callable more than once
 
-```
-All modified state variables are updated atomically:
-  ✓ balance[user] decremented
-  ✓ totalBalance decremented
-  ✓ lastWithdrawTime updated
-  ✗ pendingWithdrawals NOT updated ← VULNERABILITY
-```
-
-### Sequence Vulnerability Detection
-
-Test unexpected call orderings:
-
-```
-Expected: initialize() → deposit() → stake() → withdraw()
-Test:
-  - deposit() before initialize() → should revert
-  - withdraw() before deposit() → should revert
-  - stake() after pause() → should revert
-  - initialize() after initialize() → should revert (re-init attack)
-```
-
-### Cross-Contract State Synchronization
-
-When Contract A depends on Contract B:
-
-```
-A.getPrice() calls B.latestAnswer()
-  - What if B returns stale data?
-  - What if B is paused?
-  - What if B returns 0?
-  - What if B reverts?
-  - What if B is upgraded to return manipulated data?
-```
-
-Verify all edge cases are handled in Contract A's logic.
-
----
-
-## Detection Output Format
-
-For each engine finding:
-
-```
-Finding: [Descriptive title]
-Dimension: [Economic | Access Control | State Integrity]
-Evidence:
-  - [Concrete code evidence]
-  - [State condition that enables exploit]
-  - [Impact description]
-Exploit Path: [Step-by-step attack sequence]
-Confidence: [Score from Phase 4]
-```
+### Cross-Contract State Sync
+- When A depends on B: test stale data, B paused, B returns 0, B reverts, B upgraded maliciously
+- Verify all edge cases handled in caller's logic

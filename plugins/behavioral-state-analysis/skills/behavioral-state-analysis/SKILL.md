@@ -1,188 +1,134 @@
 ---
 name: behavioral-state-analysis
-description: Performs multi-dimensional smart contract security auditing using Behavioral State Analysis (BSA). Extracts behavioral intent, models state machines, runs parallel threat engines (economic, access control, state integrity), generates adversarial proofs, and scores findings with Bayesian confidence. Use when auditing smart contracts, performing security reviews, threat modeling DeFi protocols, or when asked to find vulnerabilities across economic, access control, and state integrity dimensions.
+description: Token-efficient smart contract security auditing via Behavioral State Analysis (BSA). Scopes analysis to contract type, runs only relevant threat engines, and uses tiered output depth. Use for auditing smart contracts, security reviews, or DeFi threat modeling.
 ---
 
 # Behavioral State Analysis (BSA)
 
-Systematically audit smart contracts by understanding **behavioral intent first**, then exploring how it can be broken across multiple security dimensions simultaneously.
+Audit smart contracts by extracting behavioral intent, then systematically breaking it across security dimensions.
 
 ## When to Use
 
-- Starting a comprehensive smart contract security audit
-- Threat modeling DeFi protocols, staking systems, AMMs, vaults
-- Analyzing cross-contract attack surfaces
-- Generating adversarial exploit scenarios with proof-of-concepts
-- Scoring and prioritizing vulnerability findings
+- Smart contract security audits
+- DeFi protocol threat modeling (DEXs, lending, staking, vaults)
+- Cross-contract attack surface analysis
+- Vulnerability prioritization with confidence scoring
 
 ## When NOT to Use
 
-- Pure context building without vulnerability detection (use audit-context-building)
-- Only identifying entry points (use entry-point-analyzer)
-- Single-dimension analysis only (use semantic-guard-analysis or state-invariant-detection directly)
+- Pure context building (use audit-context-building)
+- Entry point identification only (use entry-point-analyzer)
+- Single-dimension only (use semantic-guard-analysis or state-invariant-detection)
 
-## Core Philosophy
+## Token Budget Rules
 
-Traditional auditing either pattern-matches (missing novel vulns), builds structural maps (missing behavioral anomalies), or analyzes sequentially (missing cross-function vectors).
+**Follow these strictly to avoid context exhaustion:**
 
-BSA asks three questions **simultaneously**:
+1. **Be terse.** Use bullet points and tables, not prose. No filler sentences.
+2. **Smart scope first.** Classify the contract type in Phase 1, then run ONLY relevant engines in Phase 2 (see engine selection matrix below).
+3. **Tiered output depth:**
+   - Critical/High findings → full detail + PoC code
+   - Medium findings → root cause + exploit scenario (no PoC)
+   - Low/Info findings → one-line description only
+4. **No redundant analysis.** If a dimension has no attack surface (e.g., no value flows = skip ETE), say "N/A" and move on.
+5. **Cap Phase 1 output** to ≤30 lines per contract. List invariants and states, skip verbose specification documents.
+6. **PoC generation** only for Critical and High severity findings. For others, describe the exploit path in ≤3 steps.
+7. **Combine phases in output** — don't repeat findings across phases. Each finding appears once with all metadata inline.
 
-1. **What should happen?** (Specification extraction)
-2. **What can happen?** (State space exploration)
-3. **What shouldn't happen but can?** (Vulnerability detection)
+## Pipeline
 
-## The 4-Phase Audit Pipeline
+### Phase 1: Behavioral Decomposition (keep brief)
 
-### Phase 1: Behavioral Decomposition
-
-Extract the intended behavior model from code and documentation.
-
-**Step 1 - Semantic Parsing:**
-- Analyze function signatures, NatSpec comments, variable naming
-- Extract business logic intent (e.g., "allows users to withdraw vested tokens")
-- Create a Behavioral Specification Document per contract
-
-**Step 2 - Invariant Extraction:**
-- Mathematical invariants: `totalSupply == sum(balances)`
-- Economic invariants: "User cannot withdraw more than deposited"
-- Access control policies: "Only owner can pause"
-
-**Step 3 - State Machine Construction:**
-- Model every contract as a state machine
-- States: Contract configurations (paused/active, initialized/uninitialized)
-- Transitions: Functions that modify state
-- Output: Formal state transition diagram
-
-**Expected Output:**
+Extract intent from code and docs. Output per contract:
 
 ```
-Contract: StakingPool
-States: [Uninitialized, Active, Paused, Emergency]
-Invariants:
-  - totalStaked >= sum(userStakes)
-  - rewardRate > 0 when Active
-  - Emergency can only be entered by Owner
+Contract: <Name>
+Type: <DeFi/Token/Governance/NFT/Utility/Proxy>
+States: [list]
+Key Invariants (≤5):
+  - <invariant>
+Privileged Roles: [list]
+Value Entry/Exit Points: [list or "none"]
 ```
 
-### Phase 2: Multi-Dimensional Threat Modeling
+**Then select engines:**
 
-Run three specialized analysis engines **in parallel**:
+| Contract Type | Run ETE | Run ACTE | Run SITE |
+|--------------|---------|----------|----------|
+| DeFi (DEX/lending/vault/staking) | Yes | Yes | Yes |
+| Token (ERC20/721/1155) | Yes | Lite | Lite |
+| Governance/DAO | Lite | Yes | Yes |
+| NFT marketplace | Yes | Yes | Lite |
+| Utility/Library | No | Lite | Lite |
+| Proxy/Upgradeable | No | Yes | Yes |
 
-#### Economic Threat Engine (ETE)
+**Lite** = check only the top-priority item for that engine (see below).
 
-Focus: Money flow, token economics, value extraction.
+### Phase 2: Threat Modeling (selected engines only)
 
-1. **Value Flow Tracing** - Trace every path where value can enter/leave; build a Value Flow Tree; identify value sinks and unexpected value sources
-2. **Economic Invariant Verification** - Test `sum(deposits) == sum(withdrawals) + contractBalance`; check inflation/deflation; simulate price manipulation
-3. **Incentive Analysis** - Model rational actor behavior; identify MEV opportunities; detect game-theoretic vulnerabilities (griefing)
+Run only the engines selected above. For each engine, analyze in this priority order — stop if contract surface is exhausted:
 
-#### Access Control Threat Engine (ACTE)
+**Economic Threat Engine (ETE):**
+1. Value flow tracing — where can value enter/leave? Any sinks or circular flows?
+2. Economic invariant verification — does `deposits == withdrawals + balance` hold?
+3. Incentive analysis — any rational actor exploits (MEV, sandwich, griefing)?
 
-Focus: Permission boundaries, privilege escalation, role management.
+**Access Control Threat Engine (ACTE):**
+1. Unprotected privileged functions — any admin/owner actions callable by anyone?
+2. Role escalation paths — can `User → [actions] → Admin`?
+3. msg.sender vs tx.origin confusion; signature replay
 
-1. **Role Hierarchy Mapping** - Identify all roles; map privilege relationships; detect unprotected privileged functions
-2. **Permission Boundary Testing** - For each function: "Who can call this and when?"; test all combinations of `User A calling Function X in State Y`
-3. **Privilege Escalation Simulation** - Find sequences: `User → [Actions] → Admin`; test `msg.sender` vs `tx.origin` confusion; check signature replay
+**State Integrity Threat Engine (SITE):**
+1. Non-atomic state updates — partial updates before external calls?
+2. Sequence vulnerabilities — initialization bypass, unexpected call ordering?
+3. Cross-contract stale data or reentrancy vectors
 
-#### State Integrity Threat Engine (SITE)
+**Lite mode** = run only item #1 from that engine's list.
 
-Focus: State consistency, atomicity, sequence vulnerabilities.
-
-1. **State Transition Validation** - Verify atomic state updates; check for partial updates; identify race conditions
-2. **Sequence Vulnerability Detection** - Test unexpected call ordering; check initialization bypass
-3. **Cross-Contract State Sync** - Verify consistency when Contract A depends on Contract B; test stale data; identify timestamp manipulation
-
-For detailed engine specifications, see [{baseDir}/references/threat-engines.md]({baseDir}/references/threat-engines.md).
-
-### Phase 3: Adversarial Simulation & Proof Generation
+### Phase 3: Exploit Verification
 
 For each hypothesis from Phase 2:
+- Build attack sequence (≤5 steps)
+- For Critical/High: generate minimal Foundry/Hardhat PoC (keep code short — test the specific vuln, not a full test suite)
+- Quantify impact: Critical (all funds/system) | High (significant loss/privesc) | Medium (griefing/DOS) | Low (info/best practice)
 
-1. **Exploit Scenario Construction** - Build attack sequences; use symbolic execution to find satisfying conditions; generate transaction sequences `[tx1, tx2, tx3, ...]`
-2. **Proof-of-Concept Generation** - Write Foundry/Hardhat test cases; include exact calldata and expected outcomes; measure impact
-3. **Impact Quantification**:
-   - **Critical**: Loss of all funds or complete system compromise
-   - **High**: Significant loss or unauthorized access
-   - **Medium**: Griefing, temporary DOS, minor leaks
-   - **Low**: Informational or best practice violations
+### Phase 4: Score & Prioritize
 
-### Phase 4: Confidence Scoring & Prioritization
-
-Score every finding using:
-
-```
-Confidence = (Evidence_Strength x Exploit_Feasibility x Impact_Severity) / False_Positive_Rate
-```
+Score: `Confidence = (Evidence × Feasibility × Impact) / FP_Rate`
 
 | Factor | 1.0 | 0.7 | 0.4 | 0.1 |
 |--------|-----|-----|-----|-----|
-| Evidence | Concrete code path, no deps | Depends on specific state | Pattern-based theory | Heuristic only |
-| Feasibility | PoC confirmed | Achievable specific state | Requires external conditions | Practically infeasible |
+| Evidence | Concrete path, no deps | Specific state needed | Pattern-based | Heuristic |
+| Feasibility | PoC confirmed | Achievable state | External conditions | Infeasible |
 
-| Impact | Score | Description |
-|--------|-------|-------------|
-| Complete loss | 5 | All funds or system compromise |
-| Partial loss | 4 | Partial fund loss or privilege escalation |
-| Griefing | 3 | Temporary DOS |
-| Info leak | 2 | Minor inconsistency |
-| Best practice | 1 | No direct security impact |
+Impact: 5=total loss, 4=partial loss, 3=griefing, 2=info leak, 1=best practice
+FP_Rate: 0.05 (known pattern) → 0.15 (moderate) → 0.40 (weak) → 0.60 (heuristic)
 
-For confidence scoring details, see [{baseDir}/references/confidence-scoring.md]({baseDir}/references/confidence-scoring.md).
+**Prioritization:** Report findings ≥10% confidence. Never suppress Impact ≥4.
 
-## Workflow
+## Finding Format (use for every finding)
 
 ```
-Task Progress:
-- [ ] Phase 1: Behavioral Decomposition (semantic parse → invariants → state machine)
-- [ ] Phase 2a: Economic Threat Engine analysis
-- [ ] Phase 2b: Access Control Threat Engine analysis
-- [ ] Phase 2c: State Integrity Threat Engine analysis
-- [ ] Phase 3: Adversarial Simulation & PoC generation
-- [ ] Phase 4: Confidence scoring & prioritization
-- [ ] Generate final report
+### [F-N] Title
+Severity: Critical|High|Medium|Low  |  Confidence: X%
+Location: contract.sol#L10-L25, functionName()
+Root Cause: <1-2 sentences>
+Exploit: <numbered steps, ≤5>
+Impact: <1 sentence with quantified risk>
+Fix: <code diff or 1-2 sentence recommendation>
+PoC: <only for Critical/High — minimal test code>
 ```
 
-## Report Structure
+## Advanced Checks (run only if relevant to contract type)
 
-Each finding must include:
+- **Cross-contract:** Map external call chains `A→B→C`, test transitive trust
+- **Time-based:** `block.timestamp` manipulation, expired signatures, replay
+- **Upgradeable:** Storage collisions, re-initialization, migration atomicity
 
-1. **Title**: Clear, descriptive name
-2. **Severity**: Critical / High / Medium / Low
-3. **Confidence Score**: Percentage from Phase 4 formula
-4. **Affected Code**: Exact line numbers and function names
-5. **Root Cause**: Technical explanation of why the bug exists
-6. **Exploit Scenario**: Step-by-step attack sequence
-7. **Proof-of-Concept**: Runnable Foundry/Hardhat test
-8. **Impact Assessment**: Quantified risk (funds at risk, affected users)
-9. **Remediation**: Specific code fix with before/after comparison
-10. **References**: Similar vulnerabilities in other contracts
+## Mindset
 
-## Advanced Detection Mechanisms
-
-### Cross-Contract Attack Surface
-
-1. Map all external calls: `A → B → C`
-2. Identify trust boundaries
-3. Test transitive vulnerabilities (if B is vulnerable, can A be exploited through it?)
-4. Test composition vulnerabilities (two "safe" contracts creating vulns together)
-
-### Time-Based Vulnerabilities
-
-1. Test `block.timestamp` manipulation
-2. Check expired action execution
-3. Test signature replay after expiration
-4. Verify sequence-dependent function ordering
-
-### Upgrade & Migration Safety
-
-1. Detect storage collisions between implementation versions
-2. Ensure `initialize()` can only be called once
-3. Verify migration atomicity (old and new contracts cannot both be active)
-
-## Rationalizations to Reject
-
-- "This function looks standard" → Standard functions can have non-standard behavior in context
-- "The admin is trusted" → Model admin compromise; check if admin powers are excessive
-- "This is a known pattern" → Known patterns can have novel interactions in specific contexts
-- "The value is small" → Small values compound; griefing attacks scale
-- "External calls are to trusted contracts" → Trust boundaries shift; verify the actual code
+- "Standard function" → can behave non-standardly in context
+- "Admin is trusted" → model admin compromise, check excessive powers
+- "Known pattern" → novel interactions in specific contexts
+- "Small value" → compounds; griefing scales
+- "Trusted external contract" → trust boundaries shift; verify actual code
