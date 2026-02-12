@@ -246,12 +246,6 @@ These skills are derived from the QuillShield Semantic State Protocol research a
 - Academic research on hybrid AI + symbolic execution auditing
 - Real-world exploit post-mortems (The DAO, Euler, Mango Markets, Curve, Nomad Bridge, etc.)
 
-Original source documents:
-
-- `poc_new_approaches/semantic_analyzer/newApproach.md` — Behavioral State Analysis methodology
-- `poc_new_approaches/semantic_analyzer/semantic_state_protocol.md` — Guard-state consistency detection
-- `poc_new_approaches/semantic_analyzer/semantic_state_to_state_protocol.md` — State-state invariant detection
-
 ## Contributing
 
 We welcome contributions: fixes to existing skills, new references, or new plugins. Please read [CONTRIBUTING.md](CONTRIBUTING.md) for how to propose changes and open pull requests.
@@ -259,6 +253,10 @@ We welcome contributions: fixes to existing skills, new references, or new plugi
 ## License
 
 This project is licensed under the [MIT License](LICENSE).
+
+## Security
+
+To report a security concern (e.g. in the methodology or documentation), see [SECURITY.md](SECURITY.md).
 
 ## Code of Conduct
 

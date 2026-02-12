@@ -38,6 +38,10 @@ This Code of Conduct applies within all community spaces, and also applies when 
 
 Instances of abusive, harassing, or otherwise unacceptable behavior may be reported to the project maintainers. All complaints will be reviewed and investigated promptly and fairly. All project team members are obligated to respect the privacy and security of the reporter of any incident.
 
+## Contact
+
+Instances of abusive, harassing, or otherwise unacceptable behavior may be reported to the project maintainers by opening an [issue](https://github.com/quillai-network/qs_skill/issues) (use a private channel if the incident involves a maintainer). We will respect confidentiality and respond as appropriate.
+
 ## Attribution
 
 This Code of Conduct is adapted from the [Contributor Covenant](https://www.contributor-covenant.org), version 2.1.
