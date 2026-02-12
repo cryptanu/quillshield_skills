@@ -1,71 +1,82 @@
 {
   "name": "quillshield-security-skills",
-  "version": "2.0.0",
-  "description": "QuillShield smart contract security auditing skills for AI agents. Comprehensive coverage of OWASP Smart Contract Top 10 plus proxy/upgrade, signature replay, and token integration vulnerabilities.",
   "owner": {
-    "name": "QuillShield",
-    "url": "https://github.com/quillai-network"
+    "name": "QuillShield"
+  },
+  "metadata": {
+    "description": "QuillShield smart contract security auditing skills for AI agents. Comprehensive coverage of OWASP Smart Contract Top 10 plus proxy/upgrade, signature replay, and token integration vulnerabilities.",
+    "version": "2.0.0"
   },
   "plugins": [
     {
       "name": "behavioral-state-analysis",
-      "description": "Multi-dimensional smart contract security auditing using Behavioral State Analysis (BSA). Combines behavioral intent extraction, parallel threat engines, adversarial simulation, and Bayesian confidence scoring.",
       "source": "./plugins/behavioral-state-analysis",
-      "category": "security"
+      "description": "Multi-dimensional smart contract security auditing using Behavioral State Analysis (BSA). Combines behavioral intent extraction, parallel threat engines, adversarial simulation with PoC generation, and Bayesian confidence scoring.",
+      "version": "1.0.0",
+      "author": { "name": "QuillShield" }
     },
     {
       "name": "semantic-guard-analysis",
-      "description": "Detects logic vulnerabilities by analyzing guard-state consistency patterns. Finds functions that bypass security checks established by the contract's own patterns.",
       "source": "./plugins/semantic-guard-analysis",
-      "category": "security"
+      "description": "Detects logic vulnerabilities by finding functions that bypass security checks the contract consistently applies elsewhere. Based on the Consistency Principle.",
+      "version": "1.0.0",
+      "author": { "name": "QuillShield" }
     },
     {
       "name": "state-invariant-detection",
-      "description": "Detects broken mathematical relationships between state variables. Infers invariants then finds functions that violate them — catches unauthorized minting, broken tokenomics, and accounting desynchronization.",
       "source": "./plugins/state-invariant-detection",
-      "category": "security"
+      "description": "Automatically infers mathematical relationships between state variables then finds functions that violate them. Catches vulnerabilities behind the biggest DeFi hacks.",
+      "version": "1.0.0",
+      "author": { "name": "QuillShield" }
     },
     {
       "name": "reentrancy-pattern-analysis",
-      "description": "Systematic detection of all reentrancy variants — classic, cross-function, cross-contract, and read-only reentrancy. Verifies CEI pattern compliance and detects callback-based attack vectors.",
       "source": "./plugins/reentrancy-pattern-analysis",
-      "category": "security"
+      "description": "Systematically detects all reentrancy variants — classic, cross-function, cross-contract, read-only, and ERC-777/ERC-1155 callback reentrancy.",
+      "version": "1.0.0",
+      "author": { "name": "QuillShield" }
     },
     {
       "name": "oracle-flashloan-analysis",
-      "description": "Detects price oracle manipulation and flash loan attack vectors in DeFi smart contracts. Classifies oracle trust models, identifies stale price risks, and flash loan atomicity exploitation patterns.",
       "source": "./plugins/oracle-flashloan-analysis",
-      "category": "security"
+      "description": "Detects price oracle manipulation and flash loan attack vectors. Classifies oracle trust models, identifies stale prices, circular dependencies, and flash loan atomicity exploitation.",
+      "version": "1.0.0",
+      "author": { "name": "QuillShield" }
     },
     {
       "name": "proxy-upgrade-safety",
-      "description": "Detects vulnerabilities in upgradeable proxy contracts — storage collisions, uninitialized implementations, selector clashing, and upgrade path safety. Covers Transparent, UUPS, Beacon, and Diamond patterns.",
       "source": "./plugins/proxy-upgrade-safety",
-      "category": "security"
+      "description": "Detects vulnerabilities in upgradeable proxy architectures — storage layout collisions, uninitialized implementations, function selector clashing, and upgrade path safety.",
+      "version": "1.0.0",
+      "author": { "name": "QuillShield" }
     },
     {
       "name": "input-arithmetic-safety",
-      "description": "Detects input validation failures and arithmetic vulnerabilities — precision loss, rounding exploitation, ERC4626 inflation attacks, unsafe casting, and Solidity 0.8+ unchecked block edge cases.",
       "source": "./plugins/input-arithmetic-safety",
-      "category": "security"
+      "description": "Detects input validation failures and arithmetic vulnerabilities — precision loss, rounding exploitation, ERC4626 inflation attacks, unsafe casting, and unchecked block risks.",
+      "version": "1.0.0",
+      "author": { "name": "QuillShield" }
     },
     {
       "name": "external-call-safety",
-      "description": "Detects unsafe external call patterns and token integration vulnerabilities — unchecked returns, fee-on-transfer tokens, rebasing tokens, ERC-777 callbacks, and return data bombs.",
       "source": "./plugins/external-call-safety",
-      "category": "security"
+      "description": "Detects unsafe external call patterns and token integration vulnerabilities. Covers unchecked return values, fee-on-transfer tokens, rebasing tokens, and callback risks.",
+      "version": "1.0.0",
+      "author": { "name": "QuillShield" }
     },
     {
       "name": "signature-replay-analysis",
-      "description": "Detects signature replay vulnerabilities — same-chain, cross-chain, and cross-contract replay attacks, EIP-712 verification, nonce management, and meta-transaction security.",
       "source": "./plugins/signature-replay-analysis",
-      "category": "security"
+      "description": "Detects signature replay vulnerabilities. Covers same-chain, cross-chain, cross-contract, nonce-skip, and expired replay types plus EIP-712 and ecrecover safety.",
+      "version": "1.0.0",
+      "author": { "name": "QuillShield" }
     },
     {
       "name": "dos-griefing-analysis",
-      "description": "Detects DoS and griefing vulnerabilities — unbounded loops, gas limit exhaustion, external call failure DoS, 63/64 rule griefing, storage bloat, and push vs pull payment patterns.",
       "source": "./plugins/dos-griefing-analysis",
-      "category": "security"
+      "description": "Detects Denial of Service and griefing vulnerabilities — unbounded loops, gas limit exhaustion, external call failure DoS, 63/64 gas griefing, and storage bloat.",
+      "version": "1.0.0",
+      "author": { "name": "QuillShield" }
     }
   ]
 }
