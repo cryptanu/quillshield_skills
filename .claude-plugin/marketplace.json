@@ -77,6 +77,13 @@
       "description": "Detects Denial of Service and griefing vulnerabilities — unbounded loops, gas limit exhaustion, external call failure DoS, 63/64 gas griefing, and storage bloat.",
       "version": "1.0.0",
       "author": { "name": "QuillShield" }
+    },
+    {
+      "name": "defender",
+      "source": "./plugins/defender",
+      "description": "Blue-team release-gate skill for deploy and upgrade readiness. Reviews CI/CD trust boundaries, deploy script safety, config drift, signer/admin operational security, and outputs an evidence-based release verdict.",
+      "version": "1.0.0",
+      "author": { "name": "QuillShield" }
     }
   ]
 }
