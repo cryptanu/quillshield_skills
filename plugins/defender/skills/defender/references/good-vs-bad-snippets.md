@@ -1,11 +1,9 @@
 # Good vs Bad Snippets
-
 Use these snippets as pattern anchors while reviewing deploy safety.
 
 ## 1) Chain assertion in Foundry deploy scripts
 
 Bad:
-
 ```solidity
 function run() external {
     vm.startBroadcast();
@@ -15,7 +13,6 @@ function run() external {
 ```
 
 Good:
-
 ```solidity
 function run() external {
     uint256 expectedChainId = 1;
@@ -33,13 +30,11 @@ function run() external {
 ## 2) Explicit required environment values
 
 Bad:
-
 ```solidity
 string memory rpc = vm.envOr("RPC_URL", string("https://mainnet.example"));
 ```
 
 Good:
-
 ```solidity
 string memory rpc = vm.envString("RPC_URL");
 require(bytes(rpc).length > 0, "missing RPC_URL");
@@ -48,14 +43,12 @@ require(bytes(rpc).length > 0, "missing RPC_URL");
 ## 3) Private key handling guidance
 
 Bad docs pattern:
-
 ```bash
-# .env
+# env
 PRIVATE_KEY=0xabc...
 ```
 
 Better docs pattern:
-
 ```bash
 # Use keystore-backed signing
 cast wallet import deployer --interactive
@@ -65,14 +58,12 @@ forge script script/Deploy.s.sol:Deploy --account deployer --sender <deployer_ad
 ## 4) GitHub Actions pinning
 
 Bad:
-
 ```yaml
 - uses: actions/checkout@v4
 - uses: foundry-rs/foundry-toolchain@v1
 ```
 
 Better:
-
 ```yaml
 - uses: actions/checkout@8ade135a41bc03ea155e62e844d188df1ea18608
 - uses: foundry-rs/foundry-toolchain@<pinned-commit-sha>
@@ -81,7 +72,6 @@ Better:
 ## 5) Workflow trust boundary split
 
 Bad:
-
 ```yaml
 on: [pull_request]
 jobs:
@@ -90,7 +80,6 @@ jobs:
 ```
 
 Better:
-
 ```yaml
 on:
   push:
@@ -111,14 +100,12 @@ jobs:
 ## 6) Hardhat network safety checks
 
 Bad:
-
 ```ts
 const [deployer] = await ethers.getSigners();
 await hre.run("deploy");
 ```
 
 Good:
-
 ```ts
 const [deployer] = await ethers.getSigners();
 const network = await ethers.provider.getNetwork();
@@ -132,13 +119,11 @@ await hre.run("deploy");
 ## 7) Upgrade script address assertions
 
 Bad:
-
 ```ts
 await upgrades.upgradeProxy(process.env.PROXY!, ImplFactory);
 ```
 
 Good:
-
 ```ts
 const proxy = process.env.PROXY;
 if (!proxy || proxy.toLowerCase() !== EXPECTED_PROXY.toLowerCase()) {
@@ -150,13 +135,11 @@ await upgrades.upgradeProxy(proxy, ImplFactory);
 ## 8) Role transfer runbook evidence
 
 Bad:
-
 ```text
 Transfer ownership later.
 ```
 
 Good:
-
 ```text
 1. Deploy implementation and verify bytecode.
 2. Transfer proxy admin to multisig 0x....
@@ -167,7 +150,6 @@ Good:
 ## 9) CI deploy gates
 
 Bad:
-
 ```yaml
 on:
   push:
@@ -175,7 +157,6 @@ on:
 ```
 
 Good:
-
 ```yaml
 on:
   push:
@@ -190,14 +171,12 @@ jobs:
 ## 10) Dangerous FFI in deploy path
 
 Bad:
-
 ```solidity
 bytes memory out = vm.ffi(["bash", "-lc", "python scripts/resolve.py"]);
 address treasury = abi.decode(out, (address));
 ```
 
 Better:
-
 ```solidity
 address treasury = vm.envAddress("TREASURY");
 require(treasury != address(0), "invalid treasury");
