@@ -1,488 +1,374 @@
 ---
 name: defender
-description: Blue-team release-gate analysis for smart contract deployment and upgrade readiness. Classifies repositories, checks deploy/upgrade execution paths, CI/CD trust boundaries, config drift, secrets/signer operational security, and outputs evidence-backed release verdicts. Use when preparing deployments, validating upgrade runbooks, reviewing deploy scripts or CI pipelines, and enforcing pre-release operational safety.
+description: Blue-team release-gate analysis for smart contract deployment and upgrade readiness. Classifies repositories, checks deploy/upgrade execution paths, CI/CD trust boundaries, config drift, secrets/signer operational security, and outputs evidence-backed release verdicts.
 ---
 
 # Defender
 
 A blue-team release-gate skill for smart contract systems.
 
-Defender determines whether a repository is ready to deploy or upgrade safely. It focuses on release execution risk rather than exploit novelty.
-
-Use Defender to identify:
-- wrong-chain and wrong-address deployment risk
-- broken initialization and unsafe upgrade execution
-- leaked or mishandled secrets
-- unsafe CI/CD deployment trust boundaries
-- signer and admin concentration risk
-- unrehearsed role transfers and post-deploy gaps
-- false confidence from test-passing without deployment readiness
+Defender determines whether a repository is safe to deploy or upgrade. It focuses on **release execution risk**, not exploit discovery.
 
 ## Use when
 
-Use when:
 - deploying smart contracts
 - preparing upgrades
-- running deployment scripts
+- reviewing deploy scripts
 - hardening CI/CD
 - rotating admin roles
 - validating ownership handoff
-- periodically enforcing blue-team release hygiene
+- enforcing release hygiene
 
 ## Non-goals
 
-Defender is not a replacement for:
-- full exploit-focused security audits
-- protocol economic review
-- invariant discovery across all business logic
-- deep proxy vulnerability analysis already covered by `proxy-upgrade-safety`
+Defender does NOT replace:
+- full security audits
+- economic analysis
+- invariant discovery
+- deep proxy vulnerability analysis (`proxy-upgrade-safety`)
 
-Where proxy or upgradeability exists, Defender focuses on **release execution safety**, not full upgrade vulnerability discovery.
+It focuses only on **execution safety of release**.
 
-## Core operating rule
+---
+
+## Core rule
 
 **Evidence first.**
 
-Only report findings from repository evidence such as:
+Only report findings from:
 - contracts
 - deploy scripts
-- test and fork scripts
 - CI workflows
-- manifest files
 - dependency manifests
-- lockfiles
-- docs and runbooks
-- address books and config files
+- configs / address books
+- tests / fork scripts
+- docs / runbooks
 
-Do not give generic recommendations as findings. Separate:
-- **Detection**: what the repository proves
-- **Policy**: what release posture should be enforced
+Separate:
+- **Detection** → what repo proves
+- **Policy** → what should be enforced
 
-## Required execution order
+---
 
-Defender must run in this order:
+## Execution order (STRICT)
 
-1. Project classification
-2. Defence pass
-3. Severity scoring
-4. Release verdict
+1. Project classification  
+2. Defence pass  
+3. Severity scoring  
+4. Release verdict  
 
-Do not skip directly to advice.
+---
 
 ## Reference packs
 
-Load reference material selectively to keep reasoning deterministic and evidence-first.
+Always load:
+- `references/finding-catalog.md`
+- `references/severity-model.md`
+- `references/evidence-query-playbook.md`
 
-- Always load:
-  - `references/finding-catalog.md`
-  - `references/severity-model.md`
-  - `references/evidence-query-playbook.md`
-- Load by category:
-  - classification: `references/project-classification.md`
-  - CI and supply chain: `references/ci-supply-chain.md`
-  - deploy drift: `references/config-drift-checks.md`
-  - upgrade flow: `references/upgrade-readiness.md`
-  - signer/admin posture: `references/signer-opsec.md`
-  - false confidence guardrails: `references/false-confidence.md`
-  - immediate validation: `references/post-deploy-validation.md`
-  - incident context: `references/case-study-mapping.md`
-  - edge-case policy: `references/compensating-controls.md`
-  - concrete detection examples: `references/good-vs-bad-snippets.md`
-- Load templates as needed:
-  - baseline format: `templates/defender-report-template.md`
-  - worked verdict examples:
-    - `templates/defender-report-block-deploy-example.md`
-    - `templates/defender-report-proceed-with-risk-example.md`
-    - `templates/defender-report-ready-for-staged-release-example.md`
-  - operational checklists:
-    - `templates/pre-mainnet-checklist.md`
-    - `templates/upgrade-checklist.md`
-    - `templates/post-deploy-smoke-tests.md`
-    - `templates/signer-role-mapping.md`
-    - `templates/incident-response-checklist.md`
+Load contextually:
+- classification → `project-classification.md`
+- CI → `ci-supply-chain.md`
+- deploy drift → `config-drift-checks.md`
+- upgrade → `upgrade-readiness.md`
+- signer → `signer-opsec.md`
+- false confidence → `false-confidence.md`
+- post-deploy → `post-deploy-validation.md`
+
+Templates:
+- `defender-report-template.md`
+- checklist templates as needed
 
 ---
 
-## Phase 1 — Project classification
+# Phase 1 — Project classification
 
-Classify the repository before assessing risk.
+### Framework
+Detect:
+- Foundry / Hardhat / hybrid / other
 
-### 1. Framework
-Detect one of:
-- Foundry
-- Hardhat
-- hybrid
-- other
+Evidence:
+- `foundry.toml`, `hardhat.config.*`, scripts
 
-Evidence may include:
-- `foundry.toml`
-- `forge-std`
-- `hardhat.config.*`
-- `package.json` scripts
-- deployment tooling structure
+### Language
+- Solidity / Vyper / Cairo / mixed
 
-### 2. Language
-Detect one of:
-- Solidity
-- Vyper
-- Cairo
-- mixed
+### Upgradeability
+- upgradeable / immutable / mixed
 
-Evidence may include:
-- `src/**/*.sol`
-- `contracts/**/*.sol`
-- `*.vy`
-- `Scarb.toml`
-- Starknet project layout
-
-### 3. Upgradeability
-Classify as:
-- upgradeable
-- immutable
-- mixed
-
-Evidence may include:
-- OZ upgradeable imports
-- proxy admin scripts
-- UUPS / Transparent / Beacon / Diamond patterns
+Evidence:
+- OZ upgrade imports
+- proxies
 - initializer usage
-- upgrade tasks or scripts
 
-### 4. Protocol type
-Infer best-fit category:
-- token
-- vault
-- AMM
-- lending
-- bridge
-- governance
-- NFT
-- staking
-- other
+### Protocol type
+Infer:
+- token / vault / AMM / lending / bridge / governance / NFT / staking / other
 
-State uncertainty if classification is mixed or incomplete.
+### Deployment surface
+- manual / script / CI / multisig / upgrade-task
 
-### 5. Deployment surface
-Document whether deployment appears to be:
-- local/manual
-- script-driven
-- CI-triggered
-- multisig-driven
-- upgrade-task driven
+### CI surface
+- GitHub Actions / GitLab / other / none
 
-### 6. CI surface
-Classify:
-- GitHub Actions
-- GitLab CI
-- other
-- none
-
-Output a short classification block before moving on.
+Output classification block.
 
 ---
 
-## Phase 2 — Defence pass
+# Phase 2 — Defence pass
 
-Evaluate all categories below.
+## A. Build integrity
 
-### A. Build integrity
-
-Goal: determine whether release artifacts are reproducible and configuration is internally consistent.
-
-Check for:
+Check:
 - compiler version pinned
-- optimizer runs pinned
-- `evmVersion` pinned or intentionally omitted
-- lockfiles committed and consistent
-- duplicate or conflicting toolchain configuration across Foundry/Hardhat/subprojects
-- artifact directories or generated outputs that appear stale or inconsistent with source
-- source verification metadata readiness
-- local-only assumptions required to rebuild artifacts
+- optimizer pinned
+- evmVersion consistency
+- lockfiles committed
+- no conflicting configs (Foundry vs Hardhat)
+- artifacts reproducible from repo
+- verification metadata aligned
 
-Examples of evidence:
-- `foundry.toml`
-- `hardhat.config.ts`
-- `package.json`
-- `package-lock.json`, `yarn.lock`, `pnpm-lock.yaml`
-- build scripts
-- verifier scripts
+Escalate if:
+- build settings differ from verification
+- configs produce ambiguous outputs
 
-Escalate when:
-- compiler settings used for deployment differ from verification settings
-- multiple configs imply ambiguous build output
-- release artifacts cannot be reproduced from repo state
+---
 
-### B. Dependency, secrets, and supply chain
+## B. Dependencies, secrets, supply chain
 
-Goal: identify release-path compromise risk from dependency and secret handling.
+Check:
+- committed secrets
+- `.env` usage for private keys
+- floating versions
+- unpinned git deps
+- install scripts
+- dependency confusion risk
+- abandoned/suspicious packages
+- OZ version mismatch
+- unsafe sidecar tooling
+- unverified binaries
 
-Check for:
-- plaintext secrets committed to repository
-- documentation or scripts encouraging plaintext private keys
-- `.env` patterns for private keys or sensitive deploy secrets
-- missing redaction or secret scanning guidance
-- floating versions in `package.json`
-- unpinned git dependencies
-- arbitrary install or postinstall scripts
-- dependency confusion risk in package naming or private registry assumptions
-- abandoned, suspicious, or conflicting packages
-- mismatched OpenZeppelin versions across packages/modules
-- unsafe transitive tooling in TS, Python, Rust, or Cairo sidecars
-- downloaded binaries without provenance checks
+### Secret policy
 
-### Secret-handling policy
+Plaintext `.env` private keys are discouraged.
 
-Defender should advocate against storing private keys in plaintext `.env` files.
-
-Preferred recommendation:
-- use **Foundry keystore-backed accounts** for deployment and signing
-- keep private keys out of plaintext repository-adjacent files
-- treat private-key-in-env patterns as risky
+Preferred:
+- **Foundry keystore-backed accounts**
 
 Classify:
-- plaintext private key in repo or deploy docs: **BLOCKER** or **HIGH** depending on exposure
-- production deploy scripts wired to plaintext secret env variables: **HIGH**
-- generic `.env.example` for non-secret config only: acceptable if clearly non-sensitive
+- private key in repo → BLOCKER/HIGH
+- deploy scripts using plaintext env keys → HIGH
+- `.env` for non-sensitive config → acceptable
 
-### C. CI/CD trust and security
+---
 
-Goal: determine whether automation can safely build, test, and deploy production releases.
+## C. CI/CD trust
 
-Check for:
-- unpinned GitHub Actions refs such as `@main`, `@master`, or floating tags where commit pinning is expected
-- workflows exposing secrets to untrusted triggers
-- production deploys allowed from non-protected branches, tags, or weak triggers
-- no manual approval gate for production deployment
-- too many jobs with access to deploy secrets
-- downloading and executing remote scripts without checksum or signature validation
-- suspicious binaries or curl-bash style installation in release path
-- self-hosted runner trust assumptions with no hardening notes
-- workflows that combine test and production deploy trust zones carelessly
+Check:
+- unpinned GitHub Actions
+- secrets in untrusted workflows
+- deploys from weak branches
+- no approval gate
+- excessive secret access
+- curl/bash installs
+- unsafe runners
+- mixed trust zones
 
-Escalate when CI can deploy to production without strong gatekeeping.
+Escalate if CI can deploy unsafely.
 
-### D. Deployment config drift
+---
 
-Goal: catch catastrophic mismatches between intended and actual deployment target.
+## D. Deployment config drift
 
-Verify:
-- chain ID matches intended network
-- RPC endpoint corresponds to the intended chain
-- deployer address is the expected account
-- constructor and initializer args appear final, reviewed, and environment-specific
-- token, oracle, router, treasury, pauser, fee recipient, and admin addresses match intended chain
-- no testnet or stale addresses appear in production config
-- decimal assumptions match live dependencies where such assumptions are encoded
-- explorer verifier settings and metadata are pinned
-- no dangerous default-network fallback behavior exists
-- no silent env fallback can switch target network or deployer unexpectedly
+CRITICAL
 
-Flag Foundry FFI usage:
-- Foundry FFI in deploy path is **HIGH** by default
-- escalate to **BLOCKER** if FFI influences deployment parameters, secrets, addresses, or execution flow in a way that cannot be safely audited
+Check:
+- chain ID matches target
+- RPC matches chain
+- deployer is correct
+- constructor/initializer args final
+- addresses (oracle/token/admin) valid for chain
+- no test/stale addresses
+- decimals correct
+- verifier settings pinned
+- no silent fallback logic
 
-### E. Deploy-script safety
+### Foundry FFI
 
-Goal: ensure scripts are explicit, reviewable, and not fragile.
+- default: HIGH  
+- BLOCKER if affecting deploy logic/secrets
 
-Check for:
-- chain assertions in scripts
-- deployer assertions in scripts
-- explicit environment validation before broadcast
-- initialization steps present and ordered correctly
-- idempotency assumptions documented or enforced
-- no accidental reuse of test config or mock addresses
-- address book writes or generated manifests are reviewable
-- no opaque runtime branching that changes deployment outcome unexpectedly
-- verification commands are rehearsed and recorded
+---
 
-Escalate when a script can silently deploy to the wrong environment or leave contracts half-configured.
+## E. Deploy-script safety
 
-### F. Upgrade readiness
+Check:
+- chain assertions
+- deployer assertions
+- env validation
+- correct initialization order
+- idempotency assumptions clear
+- no test config reuse
+- address outputs reviewable
+- no opaque branching
+- verification steps present
 
-Only if project classification indicates upgradeable or mixed.
+Escalate if scripts can silently misdeploy.
 
-Goal: assess upgrade execution safety, not all theoretical upgrade vulnerabilities.
+---
 
-Check for:
-- implementation contract initialized or intentionally uninitializable
+## F. Upgrade readiness (if applicable)
+
+Check:
+- implementation initialized or locked
 - initializer calldata reviewed
-- storage layout diff reviewed and documented
-- proxy admin ownership confirmed
-- timelock or multisig upgrade path confirmed
-- pause and rollback authority known
-- upgrade rehearsed on a fork or staging equivalent
-- upgrade scripts validate implementation, proxy, and admin addresses explicitly
+- storage diff reviewed
+- proxy admin correct
+- multisig/timelock path exists
+- pause/rollback defined
+- fork rehearsal exists
 
-Escalate when upgrade execution depends on undocumented assumptions.
+---
 
-### G. Signer and admin opsec
+## G. Signer & admin opsec
 
-Goal: determine whether critical privileges are handled with appropriate separation and signer safety.
-
-Check for:
-- deployer is dedicated, not a general personal wallet
-- hardware-backed or secure signer path is preferred or documented
-- admin is multisig, not EOA, for production-sensitive systems
+Check:
+- deployer is dedicated
+- secure signer preferred
+- admin is multisig
+- roles separated:
+  - deployer / upgrader / pauser / treasury
 - emergency roles documented
-- signer separation exists between deployer, upgrader, pauser, treasury, and other sensitive roles
-- no hot-wallet production admin unless explicitly accepted and justified
-- dry-run transaction hashes or transaction review process exists before signing
+- no hot wallet admin unless justified
+- tx review process exists
 
-Do not assume a multisig exists if not shown. Report what evidence exists.
+---
 
-### H. Address and role mapping
+## H. Address & role mapping
 
-Goal: extract the control plane.
-
-Map evidence for:
+Extract:
 - owner/admin
 - proxy admin
 - upgrader
-- pauser/guardian
+- pauser
 - treasury
-- fee recipient
-- oracle or updater role
-- keeper if present
-- timelock if present
+- oracle
+- keeper
+- timelock
 
 Flag:
-- role concentration in one signer
-- EOA-only critical control
-- zero or placeholder addresses
-- undocumented role transfer sequence
-
-### I. Fork-rehearsed deployment
-
-Goal: reject false confidence from untested release paths.
-
-Require evidence of fork, staging, or equivalent rehearsal for:
-- deployment scripts
-- initializer calls
-- role transfers
-- ownership transfers
-- upgrade execution
-- verification commands
-- immediate smoke tests
-
-If no evidence exists, this is usually at least **HIGH** for mainnet release readiness.
-
-### J. Post-deploy readiness enforced pre-deploy
-
-Goal: ensure the team knows what must happen immediately after release.
-
-Check for a defined plan covering:
-- bytecode or source verification
-- ownership and admin assertions
-- pause test path or emergency validation plan
-- oracle heartbeat sanity or dependency liveness checks
-- expected event emissions
-- smoke test integrations
-- monitoring and alerting handoff
-- deployment manifest and address archive
-
-Absence of a post-deploy plan should lower confidence materially.
-
-### K. Unsafe deploy ergonomics
-
-Goal: catch convenience shortcuts that create operational blast radius.
-
-Check for:
-- one-command broadcast with weak guardrails
-- missing confirmations or environment assertions
-- hidden defaults and implicit env resolution
-- CREATE / CREATE2 assumptions undocumented where address determinism matters
-- nonce-sensitive deployment steps undocumented
-- scripts that are too convenient to review safely under pressure
+- role concentration
+- EOA-only control
+- zero addresses
+- missing transfer flow
 
 ---
 
-## Phase 3 — False confidence section
+## I. Fork rehearsal
 
-This section is mandatory.
+Require evidence of:
+- deploy scripts tested
+- initializer tested
+- role transfers tested
+- upgrade tested
+- verification tested
+- smoke tests run
 
-Defender must state explicitly that passing the following does **not** prove deploy safety:
+Absence → HIGH (mainnet)
+
+---
+
+## J. Post-deploy readiness
+
+Check defined plan for:
+- verification
+- ownership assertions
+- pause test
+- oracle checks
+- event expectations
+- integration smoke tests
+- monitoring
+- deployment manifest
+
+---
+
+## K. Unsafe deploy ergonomics
+
+Check:
+- one-command broadcast risk
+- missing confirmations
+- hidden env defaults
+- CREATE/CREATE2 assumptions undocumented
+- nonce-sensitive flows undocumented
+
+---
+
+# Phase 3 — False confidence
+
+MANDATORY
+
+Passing does NOT imply safety:
 - unit tests
-- `forge test`
+- forge test
 - static analysis
 - lint
 - typecheck
 
-Defender should recommend evidence-driven release controls such as:
-- dry run on fork
-- permission diff before and after deployment
-- storage layout diff
-- expected address diff
-- emitted event assertions
-- role inventory snapshot
-- post-deploy smoke calls
-
-The purpose of this section is to prevent AI-assisted or checklist-only workflows from overstating release readiness.
+Require:
+- fork rehearsal
+- permission diff
+- storage diff
+- address diff
+- event checks
+- role snapshot
+- post-deploy smoke tests
 
 ---
 
-## Phase 4 — Severity scoring
-
-Use these severities.
+# Phase 4 — Severity
 
 ### BLOCKER
-Can directly cause:
-- wrong deployment target
-- lost admin or control
+- wrong chain
+- lost admin
 - leaked secrets
-- broken initialization
-- broken or unsafe upgrade execution
-- deploy to wrong chain
-- unverifiable release artifacts
-- unrecoverable configuration failure
+- broken init
+- broken upgrade
+- unverifiable deployment
 
 ### HIGH
-Materially increases compromise risk or release failure likelihood.
-Examples:
-- production admin remains EOA without risk acceptance
-- fork rehearsal absent for mainnet path
-- unsafe CI deploy permissions
-- FFI used in deploy-critical logic
-- stale or cross-network addresses in config
+- unsafe CI
+- missing rehearsal
+- FFI misuse
+- admin EOA risk
+- stale config
 
 ### MEDIUM
-Should be fixed before mainnet but may not block testnet or staging.
-Examples:
-- docs incomplete but release path otherwise evidenced
-- role mapping partly implicit
-- verification process weakly documented
+- should fix before mainnet
 
 ### LOW
-Hygiene, observability, documentation, or process gaps that weaken assurance without invalidating release.
+- hygiene gaps
 
-Be explicit when a finding blocks:
-- all releases
-- mainnet only
-- upgrade releases only
+Specify scope:
+- mainnet-only / all releases / upgrades only
 
 ---
 
-## Phase 5 — Release verdict
+# Phase 5 — Verdict
 
-Always finish with a verdict.
+Always output:
 
-Allowed verdicts:
 - `VERDICT: BLOCK DEPLOY`
 - `VERDICT: PROCEED WITH RISK`
 - `VERDICT: READY FOR STAGED RELEASE`
 
-Support the verdict with:
+Include:
 - top blockers
-- required actions before release
+- required actions
 - evidence reviewed
-
-If evidence is incomplete, say so plainly.
 
 ---
 
-## Required output format
-
-Use this structure:
+# Output format
 
 ```text
 DEFENDER REPORT
@@ -496,12 +382,16 @@ DEFENDER REPORT
 - CI Surface:
 
 2. Release Findings
+
 BLOCKER:
 - ...
+
 HIGH:
 - ...
+
 MEDIUM:
 - ...
+
 LOW:
 - ...
 
@@ -509,36 +399,14 @@ LOW:
 - ...
 
 4. Release Verdict
-VERDICT: BLOCK DEPLOY / PROCEED WITH RISK / READY FOR STAGED RELEASE
+
+VERDICT: ...
 
 Top blockers:
 - ...
 
-Required actions before release:
+Required actions:
 - ...
 
 Evidence reviewed:
 - ...
-```
-
----
-
-## Analysis style
-
-- be precise
-- be deterministic
-- prefer short evidence-backed bullets
-- distinguish repository facts from recommended policy
-- avoid filler explanations
-- do not overstate certainty
-
-## Relationship to other QuillShield skills
-
-Defender complements, but does not replace:
-- exploit-focused auditing
-- proxy vulnerability analysis
-- oracle manipulation analysis
-- reentrancy analysis
-- invariant reasoning
-
-Use Defender as the **release gate** after or alongside offensive analysis.
