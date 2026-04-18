@@ -1,6 +1,19 @@
 # DEFENDER REPORT (Example: BLOCK DEPLOY)
 
-## 1. Project Classification
+## 1. Reviewer-Safety Findings
+
+- Gate Status: BLOCKER
+
+### Findings
+
+- D-018 Remote payload piped into interpreter
+  - Category: Developer Environment Compromise / Hostile Repository
+  - Severity: BLOCKER
+  - Evidence: `.vscode/tasks.json` contains `runOn: "folderOpen"` and command uses `curl ... | sh`.
+  - Why this matters: opening the repository can execute attacker-controlled code on reviewer/operator machines.
+  - Required action: remove remote fetch-and-exec path and require explicit reviewed setup scripts.
+
+## 2. Project Classification
 
 - Framework: Foundry
 - Language: Solidity
@@ -9,7 +22,7 @@
 - Deployment Surface: script-driven (`script/Deploy.s.sol`) and CI-triggered (`.github/workflows/release.yml`)
 - CI Surface: GitHub Actions
 
-## 2. Release Findings
+## 3. Release Findings
 
 ### BLOCKER
 
@@ -49,12 +62,12 @@
   - Scope: all releases
   - Required action: require release artifact archive.
 
-## 3. False Confidence Warnings
+## 4. False Confidence Warnings
 
 - Passing `forge test` does not prove deploy target correctness.
 - Lint and typecheck do not validate signer role separation or CI trust boundaries.
 
-## 4. Release Verdict
+## 5. Release Verdict
 
 **VERDICT:** BLOCK DEPLOY
 

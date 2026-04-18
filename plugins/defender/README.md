@@ -2,9 +2,10 @@
 
 A blue-team release-gate skill for smart contract systems.
 
-Defender classifies a project, reviews deployment and upgrade execution paths, inspects CI/CD and dependency trust boundaries, evaluates signer and admin operational security, and produces evidence-based release blockers, warnings, checklists, and post-deploy validation steps.
+Defender first runs a reviewer-safety trust gate, then classifies a project, reviews deployment and upgrade execution paths, inspects CI/CD and dependency trust boundaries, evaluates signer and admin operational security, and produces evidence-based release blockers, warnings, checklists, and post-deploy validation steps.
 
 Unlike exploit-hunting skills, Defender focuses on **safe release execution**:
+- Is this repository safe to open or execute locally?
 - Is this repository ready to deploy?
 - Is this upgrade path operationally safe?
 - Are secrets, signers, CI workflows, addresses, and network settings trustworthy?
@@ -23,16 +24,23 @@ Use Defender when:
 
 ## What Defender does
 
-Defender runs in four ordered phases:
+Defender runs in six ordered phases:
 
-1. **Classify the project**
+1. **Run Reviewer Safety Gate (Hostile Repo Triage)**
+   - workspace-triggered execution checks
+   - remote fetch-and-exec checks
+   - concealment and terminal hijack checks
+   - committed secret/credential checks
+   - frontend signer/exfiltration checks
+
+2. **Classify the project**
    - framework: Foundry / Hardhat / hybrid / other
    - language: Solidity / Vyper / Cairo / mixed
    - upgradeability: upgradeable / immutable / mixed
    - protocol type: token / vault / AMM / lending / bridge / governance / NFT / other
    - deployment and CI surfaces
 
-2. **Run the defence pass**
+3. **Run the defence pass**
    - build integrity
    - dependency, secrets, and supply chain
    - CI/CD trust and workflow security
@@ -43,13 +51,17 @@ Defender runs in four ordered phases:
    - fork rehearsal evidence
    - post-deploy readiness
 
-3. **Score findings**
+4. **Run false-confidence checks**
+   - test/lint/static-analysis outcomes are supporting evidence only
+   - release confidence requires deploy-path and operational evidence
+
+5. **Score findings**
    - BLOCKER
    - HIGH
    - MEDIUM
    - LOW
 
-4. **Output a release verdict**
+6. **Output a release verdict**
    - `BLOCK DEPLOY`
    - `PROCEED WITH RISK`
    - `READY FOR STAGED RELEASE`
@@ -89,7 +101,12 @@ Defender should emit a structured report like:
 ```text
 DEFENDER REPORT
 
-1. Project Classification
+1. Reviewer-Safety Findings
+- Gate Status: PASS / WARNING / BLOCKER
+- Findings:
+- ...
+
+2. Project Classification
 - Framework:
 - Language:
 - Upgradeability:
@@ -97,7 +114,7 @@ DEFENDER REPORT
 - Deployment Surface:
 - CI Surface:
 
-2. Release Findings
+3. Release Findings
 BLOCKER:
 - ...
 HIGH:
@@ -107,10 +124,10 @@ MEDIUM:
 LOW:
 - ...
 
-3. False Confidence Warnings
+4. False Confidence Warnings
 - ...
 
-4. Release Verdict
+5. Release Verdict
 VERDICT: BLOCK DEPLOY / PROCEED WITH RISK / READY FOR STAGED RELEASE
 
 Top blockers:

@@ -1,6 +1,19 @@
 # DEFENDER REPORT (Example: PROCEED WITH RISK)
 
-## 1. Project Classification
+## 1. Reviewer-Safety Findings
+
+- Gate Status: WARNING
+
+### Findings
+
+- D-020 Terminal profile or environment hijack risk
+  - Category: Developer Environment Manipulation
+  - Severity: MEDIUM
+  - Evidence: `.vscode/settings.json` overrides terminal default profile to a repo-local wrapper binary.
+  - Why this matters: shell behavior can be routed through unreviewed wrapper logic.
+  - Required action: remove default profile override and require explicit command entry points.
+
+## 2. Project Classification
 
 - Framework: Hardhat
 - Language: Solidity
@@ -9,7 +22,7 @@
 - Deployment Surface: script-driven manual deploy
 - CI Surface: GitHub Actions
 
-## 2. Release Findings
+## 3. Release Findings
 
 ### BLOCKER
 
@@ -41,12 +54,12 @@
   - Scope: all releases
   - Required action: enforce manifest naming convention.
 
-## 3. False Confidence Warnings
+## 4. False Confidence Warnings
 
 - Unit tests passing does not validate operational signer safety.
 - Static analysis does not prove deployment process control.
 
-## 4. Release Verdict
+## 5. Release Verdict
 
 **VERDICT:** PROCEED WITH RISK
 

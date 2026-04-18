@@ -1,6 +1,18 @@
 # DEFENDER REPORT
 
-## 1. Project Classification
+## 1. Reviewer-Safety Findings
+- Gate Status: PASS / WARNING / BLOCKER
+
+### Findings
+- None identified / list findings
+- Include per finding:
+  - Category:
+  - Severity:
+  - Evidence:
+  - Why this matters:
+  - Required action:
+
+## 2. Project Classification
 - Framework:
 - Language:
 - Upgradeability:
@@ -8,7 +20,7 @@
 - Deployment Surface:
 - CI Surface:
 
-## 2. Release Findings
+## 3. Release Findings
 
 ### BLOCKER
 - None identified / list findings
@@ -22,12 +34,12 @@
 ### LOW
 - None identified / list findings
 
-## 3. False Confidence Warnings
+## 4. False Confidence Warnings
 - Passing unit tests does not prove deploy safety because:
 - Passing `forge test` does not prove config correctness because:
 - Passing lint or typecheck does not prove signer, chain, or role readiness because:
 
-## 4. Release Verdict
+## 5. Release Verdict
 **VERDICT:** BLOCK DEPLOY / PROCEED WITH RISK / READY FOR STAGED RELEASE
 
 ### Top blockers

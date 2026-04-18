@@ -1,13 +1,13 @@
 ---
 name: defender
-description: Blue-team release-gate analysis for smart contract deployment and upgrade readiness. Classifies repositories, checks deploy/upgrade execution paths, CI/CD trust boundaries, config drift, secrets/signer operational security, and outputs evidence-backed release verdicts.
+description: Blue-team release-gate analysis for smart contract deployment and upgrade readiness. Runs a reviewer-safety trust gate, classifies repositories, checks deploy/upgrade execution paths, CI/CD trust boundaries, config drift, secrets/signer operational security, and outputs evidence-backed release verdicts.
 ---
 
 # Defender
 
 A blue-team release-gate skill for smart contract systems.
 
-Defender determines whether a repository is safe to deploy or upgrade. It focuses on **release execution risk**, not exploit discovery.
+Defender determines whether a repository is safe to inspect, then safe to deploy or upgrade. It focuses on **release execution risk**, not exploit discovery.
 
 ## Use when
 
@@ -52,10 +52,12 @@ Separate:
 
 ## Execution order (STRICT)
 
-1. Project classification  
-2. Defence pass  
-3. Severity scoring  
-4. Release verdict  
+1. Reviewer Safety Gate  
+2. Project classification  
+3. Defence pass  
+4. False confidence pass  
+5. Severity scoring  
+6. Release verdict  
 
 ---
 
@@ -67,6 +69,7 @@ Always load:
 - `references/evidence-query-playbook.md`
 
 Load contextually:
+- reviewer safety → `evidence-query-playbook.md`
 - classification → `project-classification.md`
 - CI → `ci-supply-chain.md`
 - deploy drift → `config-drift-checks.md`
@@ -78,6 +81,172 @@ Load contextually:
 Templates:
 - `defender-report-template.md`
 - checklist templates as needed
+
+---
+
+# Phase 0 — Reviewer Safety Gate
+
+MANDATORY, before any normal code review.
+
+Core question:
+- Is this repository safe to open, install, or execute in a normal developer environment?
+
+If unclear or unsafe, stop normal review flow and return a hostile-repo warning.
+
+Threat model:
+- workspace-triggered execution
+- hidden remote shell execution
+- developer environment hijacking
+- exposed secrets and credential material
+- camouflage metadata around malicious automation
+- frontend behaviors that can mislead signers or exfiltrate data
+
+## A. Trust nothing that executes on open
+
+Inspect:
+- `.vscode/tasks.json`
+- `.vscode/settings.json`
+- `.devcontainer/*`
+- editor launch hooks
+- repo bootstrap scripts referenced by workspace tasks
+
+Critical indicators:
+- `runOn: "folderOpen"`
+- shell tasks tied to workspace lifecycle events
+- auto-run tasks with hidden presentation settings
+
+Escalate to BLOCKER if:
+- auto-run task executes shell/command interpreter
+- task runs on folder open or equivalent lifecycle event
+- task fetches remote code
+- task attempts hidden or silent execution
+
+---
+
+## B. Treat remote fetch-and-exec as malicious by default
+
+BLOCKER patterns:
+- `curl ... | sh`
+- `wget ... | sh`
+- `curl ... | bash`
+- `powershell -enc ...`
+- `irm ... | iex`
+- `cmd /c` with remote fetch
+- shortened URLs piped to interpreters
+
+Why it matters:
+- arbitrary code execution without review, provenance, or checksum validation
+
+---
+
+## C. Detect concealment, not just execution
+
+Concealment indicators:
+- `"reveal": "never"`
+- `"echo": false`
+- `"focus": false`
+- `"close": true`
+- `"showReuseMessage": false`
+- obfuscated variable names around executable paths
+- excessive nonfunctional metadata around a small executable core
+
+Interpretation:
+- hidden execution settings materially increase malicious likelihood
+
+---
+
+## D. Detect environment hijacking
+
+Check for:
+- terminal default profile set to non-shell executable
+- conditional profile switching based on installed tools
+- shell/profile overrides unrelated to build/test
+- PATH-sensitive wrappers for common commands
+- OS-specific shell overrides without release justification
+
+Interpretation:
+- possible habit hijacking, PATH confusion, or wrapper-binary routing
+
+Severity:
+- MEDIUM to HIGH depending on direct execution path
+
+---
+
+## E. Escalate exposed secrets independently
+
+Check for:
+- committed `.env`
+- committed `.secret` or key material files
+- hardcoded RPC/API URLs with live keys
+- deployer private keys or mnemonic phrases
+- frontend-exposed sensitive environment values
+
+Interpretation:
+- independent trust failure even without auto-exec findings
+
+Escalation:
+- private keys/mnemonics in repo: BLOCKER
+- production credentials exposed: HIGH
+- infra keys in client path: MEDIUM/HIGH by blast radius
+
+---
+
+## F. Frontend hostile-surface checks (Web3)
+
+Inspect:
+- `window.ethereum.request`
+- `eth_sendTransaction`
+- `eth_sign`, `personal_sign`, `signTypedData`
+- spender/recipient mutation before signing
+- hidden approvals or approval scope inflation
+- wallet prompts disconnected from displayed intent
+- arbitrary upload endpoints or unknown outbound API calls
+
+Interpretation:
+- ordinary dapp frontend may still be phishing or exfiltration surface
+
+---
+
+## G. Separate real config from camouflage
+
+Check for:
+- repo identity mismatches across README/package/tasks/contracts
+- unrelated author/project names in automation metadata
+- sophisticated-looking metadata fields unused by actual tools
+- noisy diagnostics or policy blocks with tiny executable payloads
+
+Interpretation:
+- deception signal; escalate when paired with executable findings
+
+---
+
+## Reviewer Safety decision model
+
+### BLOCKER (stop deeper analysis)
+
+Trigger BLOCKER immediately if any of:
+- folder-open or auto-run shell execution
+- remote payload piped to shell/interpreter
+- hidden execution settings combined with remote command
+- committed private key or mnemonic
+- devcontainer/editor bootstrap running unreviewed remote code
+
+Action:
+- return hostile-repo warning
+- do not run installs, scripts, or local workspace tasks
+- continue only with non-executing static inspection in isolated context
+
+### WARNING
+
+Return WARNING if:
+- terminal profile hijacking exists without direct payload execution
+- secrets exposed but no auto-exec path identified
+- strong camouflage signals or identity mismatches exist
+- frontend signer/exfiltration flows can mislead users
+
+### PASS
+
+Only proceed to Phase 1 when no blocker is found and warning-level risk is explicitly documented.
 
 ---
 
@@ -365,6 +534,7 @@ Include:
 - top blockers
 - required actions
 - evidence reviewed
+- reviewer-safety gate status
 
 ---
 
@@ -373,7 +543,17 @@ Include:
 ```text
 DEFENDER REPORT
 
-1. Project Classification
+1. Reviewer-Safety Findings
+- Gate Status: PASS / WARNING / BLOCKER
+- Findings:
+  - Title:
+  - Category:
+  - Severity:
+  - Evidence:
+  - Why it matters:
+  - Required action:
+
+2. Project Classification
 - Framework:
 - Language:
 - Upgradeability:
@@ -381,7 +561,7 @@ DEFENDER REPORT
 - Deployment Surface:
 - CI Surface:
 
-2. Release Findings
+3. Release Findings
 
 BLOCKER:
 - ...
@@ -395,10 +575,10 @@ MEDIUM:
 LOW:
 - ...
 
-3. False Confidence Warnings
+4. False Confidence Warnings
 - ...
 
-4. Release Verdict
+5. Release Verdict
 
 VERDICT: ...
 

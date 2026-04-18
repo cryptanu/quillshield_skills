@@ -278,3 +278,122 @@ For each finding, include:
   - complete archive exists and is linked in release notes
 - Required action:
   - archive release evidence as part of completion criteria
+
+## D-017 Workspace auto-execution on repository open
+
+- Default severity: BLOCKER
+- Scope: all releases
+- Signals:
+  - `.vscode/tasks.json` uses `runOn: "folderOpen"` with shell/command execution
+  - editor/devcontainer lifecycle hooks execute commands on open/attach
+- Evidence to collect:
+  - `.vscode/tasks.json`
+  - `.vscode/settings.json`
+  - `.devcontainer/*`
+- Escalate when:
+  - repository open can trigger command execution without explicit user review
+- False-positive guard:
+  - no auto-run lifecycle execution; setup is manual and documented
+- Required action:
+  - remove auto-exec path and require explicit reviewed setup commands
+
+## D-018 Remote payload piped into interpreter
+
+- Default severity: BLOCKER
+- Scope: all releases
+- Signals:
+  - `curl|sh`, `wget|bash`, `irm|iex`, or equivalent remote fetch-and-exec
+  - shortened URLs piped directly to command interpreters
+- Evidence to collect:
+  - tasks, scripts, CI workflow commands, bootstrap docs
+- Escalate when:
+  - remote content is executed without pinning, review, or integrity checks
+- False-positive guard:
+  - remote artifacts are pinned, integrity checked, and reviewed before execution
+- Required action:
+  - replace pipe-to-shell with vetted, pinned, checksummed artifacts
+
+## D-019 Hidden execution concealment controls
+
+- Default severity: HIGH
+- Scope: all releases
+- Signals:
+  - task presentation suppresses visibility (`reveal: never`, `echo: false`, auto-close)
+  - noisy metadata surrounds a small executable command core
+- Evidence to collect:
+  - task presentation fields
+  - command blocks and execution wrappers
+- Escalate when:
+  - concealment is paired with auto-run or remote command execution (BLOCKER)
+- False-positive guard:
+  - commands are transparent, user-confirmed, and visible during execution
+- Required action:
+  - remove concealment settings; enforce explicit visible command execution
+
+## D-020 Terminal profile or environment hijack risk
+
+- Default severity: MEDIUM
+- Scope: all releases
+- Signals:
+  - terminal default profile points to non-shell executable
+  - repo-local settings override shell behavior in unrelated flows
+  - PATH-sensitive command wrappers or OS-specific overrides without justification
+- Evidence to collect:
+  - `.vscode/settings.json`
+  - shell/profile config and bootstrap scripts
+- Escalate when:
+  - profile override can route terminal activity through attacker-controlled executable (HIGH)
+- False-positive guard:
+  - shell defaults remain standard and overrides are minimal, explicit, and justified
+- Required action:
+  - remove profile hijack and require explicit audited command entry points
+
+## D-021 Committed credential material
+
+- Default severity: BLOCKER
+- Scope: all releases
+- Signals:
+  - private key, mnemonic, SSH private key, cloud token, or deployer secret committed
+  - frontend build config exposes sensitive env values to clients
+- Evidence to collect:
+  - `.env*`, `.secret*`, config files, frontend env wiring
+- Escalate when:
+  - active credentials or recoverable signing material are present in repository history/state
+- False-positive guard:
+  - only non-sensitive placeholders exist; secret scanning and pre-commit controls are enforced
+- Required action:
+  - rotate secrets, purge exposed material, and enforce secret handling policy
+
+## D-022 Deceptive repository metadata or identity mismatch
+
+- Default severity: MEDIUM
+- Scope: all releases
+- Signals:
+  - inconsistent project names/authors across README/package/tasks/contracts
+  - decorative policy blocks not used by actual toolchain
+  - automation language mismatched with real build system
+- Evidence to collect:
+  - README, package metadata, task definitions, workflow labels
+- Escalate when:
+  - deception signals pair with executable findings or secret exposure (HIGH/BLOCKER by chain)
+- False-positive guard:
+  - naming and metadata are consistent and tied to real tooling
+- Required action:
+  - normalize project identity and remove deceptive or unused automation metadata
+
+## D-023 Frontend signer deception or exfiltration path
+
+- Default severity: HIGH
+- Scope: all releases
+- Signals:
+  - wallet signing flow can silently change spender, recipient, or calldata
+  - approval prompts do not match displayed action
+  - unknown outbound endpoints accept sensitive wallet/user payloads
+- Evidence to collect:
+  - frontend wallet interaction code and API upload/exfil paths
+- Escalate when:
+  - signer intent can be misrepresented or sensitive payloads can leave trusted boundaries
+- False-positive guard:
+  - signer prompts are deterministic, reviewable, and bound to rendered intent
+- Required action:
+  - harden signing UX, validate typed data, and restrict outbound data paths
